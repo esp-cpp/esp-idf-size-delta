@@ -32,6 +32,10 @@ inputs:
     description: 'GitHub token'
     required: false
     default: ${{ github.token }}
+  checkout_token:
+    description: 'Token to use for checkout actions (defaults to GITHUB_TOKEN)'
+    required: false
+    default: ''
 
 outputs:
   markdown:
@@ -58,7 +62,7 @@ runs:
       with:
         fetch-depth: 0
         submodules: 'recursive'
-        token: ${{ inputs.CHECKOUT_TOKEN }}
+        token: ${{ inputs.checkout_token || github.token }}
 
     - name: Build (HEAD) and collect size
       uses: espressif/esp-idf-ci-action@v1
