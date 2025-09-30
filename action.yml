@@ -116,7 +116,12 @@ runs:
       id: mkdown
       shell: bash
       run: |
-        md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json "${{ steps.collect-head.outputs.json }}" --base-json "${{ steps.collect-base.outputs.json }}")
+        # write the head/base json data to files for the python script
+        echo '${{ steps.collect-head.outputs.json }}' > head.json
+        echo '${{ steps.collect-base.outputs.json }}' > base.json
+        # generate markdown
+        md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json head.json --base-json base.json)
+        # append to summary and set output
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
         echo "markdown<<EOF" >> $GITHUB_OUTPUT
         echo "$md" >> $GITHUB_OUTPUT
