@@ -111,7 +111,7 @@ runs:
         md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json size.json --base-json base/size.json)
         # append to summary and set output
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
-        echo "markdown=<<EOF" >> $GITHUB_OUTPUT
+        echo "markdown<<EOF" >> $GITHUB_OUTPUT
         echo "$md" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
