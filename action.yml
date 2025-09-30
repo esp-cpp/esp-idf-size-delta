@@ -104,7 +104,7 @@ runs:
 
     - name: Make markdown
       id: mkdown
-      current-directory: ${{ inputs.app_path }}
+      working-directory: ${{ inputs.app_path }}
       shell: bash
       run: |
         # generate markdown
