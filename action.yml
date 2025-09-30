@@ -116,3 +116,16 @@ runs:
           const body = `${{ toJSON(steps.mkdown.outputs.markdown) }}`.replace(/^"|"$/g, '');
           const {owner, repo, number} = context.issue;
           await github.rest.issues.createComment({ owner, repo, issue_number: number, body });
+
+    - name: Append to Release Notes (if Release)
+      if: ${{ github.event.release && github.event.action == 'published' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const addition = `${{ toJSON(steps.mkdown.outputs.markdown) }}`.replace(/^"|"$/g, '');
+          const {owner, repo} = context.repo;
+          const release_id = context.payload.release.id;
+          const current = context.payload.release.body || '';
+          const body = [current, '', addition].filter(Boolean).join('\n');
+          await github.rest.repos.updateRelease({ owner, repo, release_id, body });
