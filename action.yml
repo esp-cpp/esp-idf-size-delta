@@ -121,7 +121,7 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
-          const body = `${{ steps.mkdown.outputs.markdown.replace('`', '\\`') }}`
+          const body = `${{ steps.mkdown.outputs.markdown }}`
           const {owner, repo, number} = context.issue;
           const appName = `${{ inputs.app_name }}`;
           const commentIdentifier = `<!-- esp-idf-size-delta:${appName} -->`;
@@ -164,7 +164,7 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
-          const addition = `${{ steps.mkdown.outputs.markdown.replace('`', '\\`') }}`
+          const addition = `${{ steps.mkdown.outputs.markdown }}`
           const {owner, repo} = context.repo;
           const release_id = context.payload.release.id;
           const current = context.payload.release.body || '';

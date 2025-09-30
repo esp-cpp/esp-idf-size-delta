@@ -115,7 +115,7 @@ def main():
     # Totals row removed per request
 
     md = [
-        f"### ESP-IDF Size Report — `{args.app_name}`",
+        f"### ESP-IDF Size Report for '{args.app_name}'",
         "",
         "| Metric | Base | PR | Delta |",
         "|---|---:|---:|---:|",
