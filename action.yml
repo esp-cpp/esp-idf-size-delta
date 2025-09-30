@@ -77,7 +77,6 @@ runs:
         command: |
           set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
           idf.py build
-          idf.py size-components --output-format json > size_components.json
           set -eo pipefail
           python "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
           echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
