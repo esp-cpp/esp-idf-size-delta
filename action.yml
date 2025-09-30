@@ -121,7 +121,7 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
-          const body = `${{ toJSON(steps.mkdown.outputs.markdown) }}`.replace(/^"|"$/g, '');
+          const body = `${{ steps.mkdown.outputs.markdown }}`;
           const {owner, repo, number} = context.issue;
           await github.rest.issues.createComment({ owner, repo, issue_number: number, body });
 
@@ -131,7 +131,7 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
-          const addition = `${{ toJSON(steps.mkdown.outputs.markdown) }}`.replace(/^"|"$/g, '');
+          const addition = `${{ steps.mkdown.outputs.markdown }}`
           const {owner, repo} = context.repo;
           const release_id = context.payload.release.id;
           const current = context.payload.release.body || '';
