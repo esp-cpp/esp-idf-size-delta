@@ -13,6 +13,9 @@ inputs:
     description: 'ESP-IDF version to setup'
     required: false
     default: 'v5.5'
+  idf_target:
+    description: 'ESP-IDF target (defaults to IDF_TARGET env var or "esp32")'
+    required: false
   idf_component_manager:
     description: 'Set IDF_COMPONENT_MANAGER ("0" to disable)'
     required: false
@@ -76,7 +79,7 @@ runs:
           idf.py build
           idf.py size-components --output-format json > size_components.json
           set -euo pipefail
-          ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+          ${{ steps.id_python_313.outputs.python-path }} "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
           echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
 
     - name: Checkout base
@@ -84,7 +87,7 @@ runs:
       with:
         ref: ${{ inputs.base_ref != '' && inputs.base_ref || github.event.pull_request.base.sha }}
         submodules: 'recursive'
-        token: ${{ inputs.CHECKOUT_TOKEN }}
+        token: ${{ inputs.checkout_token || github.token }}
         path: base
         fetch-depth: 0
 
@@ -99,14 +102,14 @@ runs:
           set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
           idf.py build
           set -euo pipefail
-          ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+          ${{ steps.id_python_313.outputs.python-path }} "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
           echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
 
     - name: Make markdown
       id: mkdown
       shell: bash
       run: |
-        md=$(${{ steps.id_python_313.outputs.python-path }} $GITHUB_ACTION_PATH/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json "${{ steps.collect-head.outputs.json }}" --base-json "${{ steps.collect-base.outputs.json }}")
+        md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json "${{ steps.collect-head.outputs.json }}" --base-json "${{ steps.collect-base.outputs.json }}")
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
         echo "markdown<<EOF" >> "$GITHUB_OUTPUT"
         echo "$md" >> "$GITHUB_OUTPUT"
