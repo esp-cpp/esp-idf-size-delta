@@ -54,7 +54,7 @@ runs:
         python-version: '3.13'
 
     - name: Checkout repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
         submodules: 'recursive'
@@ -76,7 +76,7 @@ runs:
           echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
 
     - name: Checkout base
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: ${{ inputs.base_ref != '' && inputs.base_ref || github.event.pull_request.base.sha }}
         submodules: 'recursive'
