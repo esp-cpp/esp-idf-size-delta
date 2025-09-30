@@ -80,7 +80,7 @@ runs:
           idf.py size-components --output-format json > size_components.json
           set -euo pipefail
           ${{ steps.id_python_313.outputs.python-path }} "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-          echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+          echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
 
     - name: Checkout base
       uses: actions/checkout@v5
@@ -103,7 +103,7 @@ runs:
           idf.py build
           set -euo pipefail
           ${{ steps.id_python_313.outputs.python-path }} "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-          echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+          echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
 
     - name: Make markdown
       id: mkdown
@@ -111,9 +111,9 @@ runs:
       run: |
         md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json "${{ steps.collect-head.outputs.json }}" --base-json "${{ steps.collect-base.outputs.json }}")
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
-        echo "markdown<<EOF" >> "$GITHUB_OUTPUT"
-        echo "$md" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        echo "markdown<<EOF" >> $GITHUB_OUTPUT
+        echo "$md" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Comment on PR
       if: ${{ inputs.post_comment == 'true' && github.event_name == 'pull_request' }}
