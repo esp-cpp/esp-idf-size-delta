@@ -1,0 +1,118 @@
+name: 'ESP-IDF Size Delta'
+description: 'Build ESP-IDF app and report FLASH and RAM deltas vs a base ref'
+author: 'espp'
+
+inputs:
+  app_name:
+    description: 'Name of the ESP-IDF app (for reporting)'
+    required: true
+  app_path:
+    description: 'Relative path to the ESP-IDF app (contains CMakeLists.txt)'
+    required: true
+  idf_version:
+    description: 'ESP-IDF version to setup'
+    required: false
+    default: 'v5.5'
+  idf_component_manager:
+    description: 'Set IDF_COMPONENT_MANAGER ("0" to disable)'
+    required: false
+    default: '0'
+  base_ref:
+    description: 'Git ref/sha to use as base for delta (defaults to PR base sha)'
+    required: false
+  post_comment:
+    description: 'Whether to post a PR comment (true/false)'
+    required: false
+    default: 'true'
+  flash_total_override:
+    description: 'Override total FLASH bytes for percentage (optional)'
+    required: false
+    default: ''
+  github_token:
+    description: 'GitHub token'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  markdown:
+    description: 'Markdown report for this app'
+    value: ${{ steps.mkdown.outputs.markdown }}
+  head_json:
+    description: 'JSON metrics for PR/head'
+    value: ${{ steps.collect-head.outputs.json }}
+  base_json:
+    description: 'JSON metrics for base'
+    value: ${{ steps.collect-base.outputs.json }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      id: id_python_313
+      with:
+        python-version: '3.13'
+
+    - name: Install ESP-IDF
+      uses: espressif/install-esp-idf-action@v1
+      with:
+        version: ${{ inputs.idf_version }}
+
+    - name: Build (HEAD)
+      shell: bash
+      working-directory: ${{ inputs.app_path }}
+      env:
+        IDF_COMPONENT_MANAGER: ${{ inputs.idf_component_manager }}
+      run: idf.py build
+
+    - name: Collect size (HEAD)
+      id: collect-head
+      shell: bash
+      working-directory: ${{ inputs.app_path }}
+      run: |
+        set -euo pipefail
+        ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout base
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.base_ref != '' && inputs.base_ref || github.event.pull_request.base.sha }}
+        path: base
+        fetch-depth: 0
+
+    - name: Build (BASE)
+      shell: bash
+      working-directory: base/${{ inputs.app_path }}
+      env:
+        IDF_COMPONENT_MANAGER: ${{ inputs.idf_component_manager }}
+      run: idf.py build
+
+    - name: Collect size (BASE)
+      id: collect-base
+      shell: bash
+      working-directory: base/${{ inputs.app_path }}
+      run: |
+        set -euo pipefail
+        ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+
+    - name: Make markdown
+      id: mkdown
+      shell: bash
+      run: |
+        md=$(${{ steps.id_python_313.outputs.python-path }} $GITHUB_ACTION_PATH/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json "${{ steps.collect-head.outputs.json }}" --base-json "${{ steps.collect-base.outputs.json }}")
+        echo "$md" >> "$GITHUB_STEP_SUMMARY"
+        echo "markdown<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$md" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR
+      if: ${{ inputs.post_comment == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const body = `${{ toJSON(steps.mkdown.outputs.markdown) }}`.replace(/^"|"$/g, '');
+          const {owner, repo, number} = context.issue;
+          await github.rest.issues.createComment({ owner, repo, issue_number: number, body });
