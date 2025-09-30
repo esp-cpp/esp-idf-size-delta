@@ -53,55 +53,50 @@ runs:
       with:
         python-version: '3.13'
 
-    - name: Install ESP-IDF
-      uses: espressif/install-esp-idf-action@v1
-      with:
-        version: ${{ inputs.idf_version }}
-
-    - name: Checkout code
+    - name: Checkout repo
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        recursive: true
+        submodules: 'recursive'
+        token: ${{ inputs.CHECKOUT_TOKEN }}
 
-    - name: Build (HEAD)
-      shell: bash
-      working-directory: ${{ inputs.app_path }}
-      env:
-        IDF_COMPONENT_MANAGER: ${{ inputs.idf_component_manager }}
-      run: idf.py build
-
-    - name: Collect size (HEAD)
+    - name: Build (HEAD) and collect size
+      uses: espressif/esp-idf-ci-action@v1
       id: collect-head
-      shell: bash
-      working-directory: ${{ inputs.app_path }}
-      run: |
-        set -euo pipefail
-        ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-        echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+      with:
+        esp_idf_version: ${{ inputs.idf_version }}
+        target: ${{ inputs.idf_target }}
+        path: ${{ inputs.app_path }}
+        command: |
+          set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
+          idf.py build
+          idf.py size-components --output-format json > size_components.json
+          set -euo pipefail
+          ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+          echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
 
     - name: Checkout base
       uses: actions/checkout@v4
       with:
         ref: ${{ inputs.base_ref != '' && inputs.base_ref || github.event.pull_request.base.sha }}
+        submodules: 'recursive'
+        token: ${{ inputs.CHECKOUT_TOKEN }}
         path: base
         fetch-depth: 0
 
-    - name: Build (BASE)
-      shell: bash
-      working-directory: base/${{ inputs.app_path }}
-      env:
-        IDF_COMPONENT_MANAGER: ${{ inputs.idf_component_manager }}
-      run: idf.py build
-
-    - name: Collect size (BASE)
+    - name: Build (BASE) and collect size
+      uses: espressif/esp-idf-ci-action@v1
       id: collect-base
-      shell: bash
-      working-directory: base/${{ inputs.app_path }}
-      run: |
-        set -euo pipefail
-        ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-        echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
+      with:
+        esp_idf_version: ${{ inputs.idf_version }}
+        target: ${{ inputs.idf_target }}
+        path: base/${{ inputs.app_path }}
+        command: |
+          set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
+          idf.py build
+          set -euo pipefail
+          ${{ steps.id_python_313.outputs.python-path }} "$GITHUB_ACTION_PATH/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+          echo "json=$(cat size.json)" >> "$GITHUB_OUTPUT"
 
     - name: Make markdown
       id: mkdown
