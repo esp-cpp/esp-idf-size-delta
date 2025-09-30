@@ -60,28 +60,32 @@ runs:
       with:
         python-version: '3.13'
 
-    - name: Checkout repo
+    - name: Checkout HEAD
       uses: actions/checkout@v5
       with:
         fetch-depth: 0
         submodules: 'recursive'
         token: ${{ inputs.checkout_token || github.token }}
 
-    - name: Build (HEAD) and collect size
+    - name: Build (HEAD)
       uses: espressif/esp-idf-ci-action@v1
-      id: collect-head
       with:
         esp_idf_version: ${{ inputs.idf_version }}
         target: ${{ inputs.idf_target }}
         path: ${{ inputs.app_path }}
         command: |
           set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
-          idf.py build
-          set -eo pipefail
-          python "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-          echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
+          idf.py size --format json2 --output-file idf_size.json
 
-    - name: Checkout base
+    - name: Process size (HEAD)
+      id: collect-head
+      shell: bash
+      working-directory: ${{ inputs.app_path }}
+      run:
+        python ${{ github.action_path }}/idf_size_report.py --in-file idf_size.json --out-file size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
+
+    - name: Checkout BASE
       uses: actions/checkout@v5
       with:
         ref: ${{ inputs.base_ref != '' && inputs.base_ref || github.event.pull_request.base.sha }}
@@ -90,19 +94,23 @@ runs:
         path: base
         fetch-depth: 0
 
-    - name: Build (BASE) and collect size
+    - name: Build (BASE)
       uses: espressif/esp-idf-ci-action@v1
-      id: collect-base
       with:
         esp_idf_version: ${{ inputs.idf_version }}
         target: ${{ inputs.idf_target }}
         path: base/${{ inputs.app_path }}
         command: |
           set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
-          idf.py build
-          set -eo pipefail
-          python "${{ github.action_path }}/idf_size_report.py" --build-dir build --out size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
-          echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
+          idf.py size --format json2 --output-file idf_size.json
+
+    - name: Process size (BASE)
+      id: collect-base
+      shell: bash
+      working-directory: base/${{ inputs.app_path }}
+      run:
+        python ${{ github.action_path }}/idf_size_report.py --in-file idf_size.json --out-file size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        echo "json=$(cat size.json)" >> $GITHUB_OUTPUT
 
     - name: Make markdown
       id: mkdown

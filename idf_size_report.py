@@ -6,31 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
-def try_idf_size_json(elf: Path):
-    try:
-        idf_path = os.environ.get('IDF_PATH', '')
-        tool = Path(idf_path) / 'tools' / 'idf_size.py'
-        if not tool.exists():
-            return None
-        out = subprocess.check_output([sys.executable, str(tool), '--json', str(elf)], text=True)
-        data = json.loads(out)
-        # IDF 5.x format
-        dram = data.get('dram', {}).get('used')
-        iram = data.get('iram', {}).get('used')
-        # Fallback for other shapes
-        if dram is None or iram is None:
-            totals = data.get('total') or data.get('Totals') or {}
-            if isinstance(totals, dict):
-                dram = totals.get('dram')
-                iram = totals.get('iram')
-        if dram is not None and iram is not None:
-            return int(dram), int(iram)
-    except Exception:
-        return None
-    return None
-
-
 def _extract_dram_iram_from_data(data):
     # Handle json2 layout: { "version": "1.x", "layout": [ {"name": "DIRAM"|"DRAM"|"IRAM", "used": N }, ... ] }
     if isinstance(data, dict) and isinstance(data.get('layout'), list):
@@ -97,28 +72,6 @@ def _extract_dram_iram_from_data(data):
                 return res
     return None
 
-
-def try_idf_py_size_json_return_data(app_dir: Path):
-    # Try json2 first, then json; return parsed JSON object
-    for fmt in ('json2', 'json'):
-        try:
-            out = subprocess.check_output(['idf.py', 'size', '--format', fmt], cwd=str(app_dir), text=True)
-            start = out.find('{')
-            end = out.rfind('}')
-            if start == -1 or end == -1:
-                continue
-            data = json.loads(out[start:end+1])
-            return data
-        except Exception:
-            continue
-    return None
-
-def try_idf_py_size_json(app_dir: Path):
-    data = try_idf_py_size_json_return_data(app_dir)
-    if data is None:
-        return None
-    return _extract_dram_iram_from_data(data)
-
 def _parse_size_totals_and_used(data):
     """Return dict with used/total for flash, dram (DIRAM), iram.
 
@@ -182,30 +135,15 @@ def _parse_size_totals_and_used(data):
 
 def main():
     p = argparse.ArgumentParser(description='Collect ESP-IDF app size metrics')
-    p.add_argument('--build-dir', default='build', help='Path to build directory')
-    p.add_argument('--app-dir', default='.', help='Path to app directory (idf.py project dir)')
-    p.add_argument('--out', default='size.json', help='Path to write JSON output')
+    p.add_argument('--in-file', default='idf_size.json', help='Path to read JSON input (from idf.py --format json/json2)')
+    p.add_argument('--out-file', default='size.json', help='Path to write JSON output')
     p.add_argument('--flash-total-override', type=int, default=0,
                    help='Override total FLASH bytes for percentage (optional)')
     args = p.parse_args()
 
-    build = Path(args.build_dir)
-    app_dir = Path(args.app_dir)
-    pd = build / 'project_description.json'
     result = {'flash': 0, 'dram': 0, 'iram': 0, 'ram': 0}
 
-    if not pd.exists():
-        Path(args.out).write_text(json.dumps(result))
-        return 0
-
-    desc = json.loads(pd.read_text())
-    elf = Path(desc.get('app_elf', ''))
-    bin_path = Path(desc.get('app_bin', ''))
-
-    flash = bin_path.stat().st_size if bin_path.exists() else 0
-
-    # Prefer idf.py size JSON via --format json/json2
-    size_data = try_idf_py_size_json_return_data(build.parent)
+    size_data = json.loads(Path(args.in_file).read_text()) if Path(args.in_file).is_file() else None
     if size_data is not None:
         parsed = _parse_size_totals_and_used(size_data)
         dram = int(parsed['dram_used'])
@@ -231,20 +169,8 @@ def main():
             'dram_total': int(parsed['dram_total']),
             'iram_total': int(parsed['iram_total']),
         }
-    else:
-        # Fallback to idf_size.py --json for used values only
-        ram_tuple = try_idf_size_json(elf)
-        if ram_tuple is None:
-            dram = 0; iram = 0
-        else:
-            dram, iram = ram_tuple
-        ram = int(dram) + int(iram)
-        flash_total = int(args.flash_total_override) if args.flash_total_override and args.flash_total_override > 0 else 0
-        result = {'flash': int(flash), 'dram': int(dram), 'iram': int(iram), 'ram': int(ram),
-                  'flash_total': flash_total, 'dram_total': 0, 'iram_total': 0}
-    Path(args.out).write_text(json.dumps(result))
+    Path(args.out_file).write_text(json.dumps(result))
     return 0
-
 
 if __name__ == '__main__':
     sys.exit(main())
