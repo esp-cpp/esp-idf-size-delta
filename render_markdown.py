@@ -122,6 +122,8 @@ def main():
         *rows,
         "",
         "<sub>FLASH uses app .bin size or json2 flash sum. RAM sums DRAM+IRAM via idf_size. Percentages shown when totals are available.</sub>",
+        "",
+        f"<!-- esp-idf-size-delta:{args.app_name} -->",
     ]
     print("\n".join(md))
 
