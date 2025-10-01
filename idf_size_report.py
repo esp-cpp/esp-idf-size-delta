@@ -150,7 +150,7 @@ def main():
         iram = int(parsed['iram_used'])
         flash_used = int(parsed['flash_used'])
         # If json has flash_used, prefer that over .bin size
-        flash_val = flash_used if flash_used > 0 else int(flash)
+        flash_val = flash_used if flash_used > 0 else 0
         ram = dram + iram
         def pct(used: int, total: int):
             try:

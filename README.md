@@ -81,7 +81,7 @@ jobs:
 
     - name: Build the code
       uses: espressif/esp-idf-ci-action@v1
-        with:
+      with:
         esp_idf_version: v5.5
         target: esp32s3
         path: '.'
@@ -97,6 +97,43 @@ jobs:
         base_ref: ${{ github.event.pull_request.base.sha }}
         flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
 ```
+
+### For Size-Only Reports (No Base Comparison)
+
+You can also use this action to generate a size report without comparing against a base reference. This is useful for standalone builds or when you only want to see the current size state without deltas.
+
+Simply omit the `base_ref` input or set it to an empty string:
+
+```yaml
+name: Build and Show Size Report
+on: [push]
+
+jobs:
+  build:
+    name: Build and report size
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Build the code
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.5
+        target: esp32s3
+        path: '.'
+
+    - name: Show Size Report
+      uses: esp-cpp/esp-idf-size-delta@v1
+      with:
+        app_name: "My ESP-IDF App"
+        app_path: "."
+        idf_target: esp32s3
+        idf_version: v5.5
+        # base_ref is omitted - will show only current size without delta comparison
+        post_comment: 'false' # typically for push events, not PRs
+```
+
+This will generate a simpler table showing only the current size metrics without base/delta columns.
 
 ### For Releases
 
@@ -179,7 +216,7 @@ inputs:
     required: false
     default: 'Base'
   base_ref:
-    description: 'Git ref/sha to use as base for delta (defaults to PR base sha)'
+    description: 'Git ref/sha to use as base for delta (optional - if omitted, shows only current size without comparison)'
     required: false
   post_comment:
     description: 'Whether to post a PR comment (true/false)'
