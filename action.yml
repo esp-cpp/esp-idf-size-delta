@@ -97,7 +97,11 @@ runs:
           fi
         fi
         echo "base_ref=$base_ref" >> $GITHUB_OUTPUT
-        echo "has_base_ref=$([ -n "$base_ref" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+        if [ -n "$base_ref" ]; then
+          echo "has_base_ref=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_base_ref=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Checkout BASE
       if: ${{ steps.determine_base_ref.outputs.has_base_ref == 'true' }}
