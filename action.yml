@@ -57,23 +57,24 @@ runs:
     - name: Checkout HEAD
       uses: actions/checkout@v5
       with:
-        fetch-depth: 0
         submodules: 'recursive'
         token: ${{ inputs.checkout_token || github.token }}
+        path: head
+        fetch-depth: 0
 
     - name: Build (HEAD)
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: ${{ inputs.idf_version }}
         target: ${{ inputs.idf_target }}
-        path: ${{ inputs.app_path }}
+        path: head/${{ inputs.app_path }}
         command: |
           set IDF_COMPONENT_MANAGER=${{ inputs.idf_component_manager }}
           idf.py size --format json2 --output-file idf_size.json
 
     - name: Process size (HEAD)
       shell: bash
-      working-directory: ${{ inputs.app_path }}
+      working-directory: head/${{ inputs.app_path }}
       run:
         python ${{ github.action_path }}/idf_size_report.py --in-file idf_size.json --out-file size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
 
@@ -104,11 +105,10 @@ runs:
 
     - name: Make markdown
       id: mkdown
-      working-directory: ${{ inputs.app_path }}
       shell: bash
       run: |
         # generate markdown
-        md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json size.json --base-json base/size.json)
+        md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
         # append to summary and set output
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
         echo "markdown<<EOF" >> $GITHUB_OUTPUT
