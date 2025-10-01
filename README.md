@@ -158,17 +158,6 @@ jobs:
     permissions:
       contents: write # to allow updating release notes
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # to fetch all tags for automatic previous tag detection
-
-    - name: Build the code
-      uses: espressif/esp-idf-ci-action@v1
-      with:
-        esp_idf_version: v5.5
-        target: esp32s3
-        path: '.'
-
     - name: Determine Size Delta
       uses: esp-cpp/esp-idf-size-delta@v1
       with:
