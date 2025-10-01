@@ -71,7 +71,7 @@ def main():
         def fmt_single_row(label: str, key: str, show_pct: bool) -> str:
             pr_pct = None
             if show_pct:
-                pt = int(pr.get(f"{key}_total", 0)) if key != 'flash' else int(pr.get('flash_total', 0))
+                pt = int(pr.get(f"{key}_total", 0))
                 if pt > 0:
                     pr_pct = compute_pct(pr[key], pt, args.precision)
             elif key == 'ram':
