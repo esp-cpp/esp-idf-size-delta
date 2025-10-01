@@ -47,7 +47,7 @@ For an example repository which uses this action, see
 
 ### Example Output on Release
 
-<img width="1174" height="804" alt="image" src="https://github.com/user-attachments/assets/71f51d70-9058-4156-93f3-6a64beed246b" />
+<img width="1317" height="608" alt="CleanShot 2025-10-01 at 10 00 06" src="https://github.com/user-attachments/assets/a2e63fa2-75d1-40e6-a733-54bfae51c2a1" />
 
 ## Using This Action
 
