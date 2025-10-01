@@ -64,9 +64,8 @@ def main():
         }
 
         # Apply optional FLASH total override for percent display
-        flash_total_override = int(args.flash_total_override) if args.flash_total_override and args.flash_total_override > 0 else 0
-        if flash_total_override > 0:
-            pr['flash_total'] = flash_total_override
+        if args.flash_total_override > 0:
+            pr['flash_total'] = args.flash_total_override
 
         def fmt_single_row(label: str, key: str, show_pct: bool) -> str:
             pr_pct = None
@@ -131,10 +130,9 @@ def main():
     }
 
     # Apply optional FLASH total override for percent display
-    flash_total_override = int(args.flash_total_override) if args.flash_total_override and args.flash_total_override > 0 else 0
-    if flash_total_override > 0:
-        pr['flash_total'] = flash_total_override
-        basev['flash_total'] = flash_total_override
+    if args.flash_total_override > 0:
+        pr['flash_total'] = args.flash_total_override
+        basev['flash_total'] = args.flash_total_override
 
     # DRAM/IRAM pct compute if totals present and missing
     # Percentages will be computed on the fly from used/total
