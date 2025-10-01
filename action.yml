@@ -91,16 +91,51 @@ runs:
       shell: bash
       run: |
         base_ref="${{ inputs.base_ref }}"
+        base_name="${{ inputs.base_name }}"
+        
+        # If no base_ref provided, try to determine it automatically
         if [ -z "$base_ref" ]; then
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             base_ref="${{ github.event.pull_request.base.sha }}"
+            echo "Auto-detected base_ref from PR: $base_ref"
+          elif [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.action }}" = "published" ]; then
+            # For releases, find the previous tag chronologically
+            echo "Release detected, finding previous tag..."
+            # Fetch all tags to ensure we have complete tag history
+            git fetch --tags --force || echo "Warning: Could not fetch tags, using local tag history"
+            
+            current_tag="${{ github.event.release.tag_name }}"
+            echo "Current release tag: $current_tag"
+            
+            # Get all tags sorted by creation date (newest first), exclude current tag
+            prev_tag=$(git --no-pager tag --sort=-creatordate | grep -v "^${current_tag}$" | head -n1 || true)
+            
+            # If that doesn't work, try version sorting as fallback
+            if [ -z "$prev_tag" ]; then
+              prev_tag=$(git --no-pager tag --sort=-version:refname | grep -v "^${current_tag}$" | head -n1 || true)
+            fi
+            
+            if [ -n "$prev_tag" ]; then
+              base_ref="$prev_tag"
+              # Auto-set base_name to the tag if not already specified
+              if [ "$base_name" = "Base" ]; then
+                base_name="$prev_tag"
+              fi
+              echo "Found previous tag: $prev_tag"
+            else
+              echo "No previous tag found for release comparison"
+            fi
           fi
         fi
+        
         echo "base_ref=$base_ref" >> $GITHUB_OUTPUT
+        echo "base_name=$base_name" >> $GITHUB_OUTPUT
         if [ -n "$base_ref" ]; then
           echo "has_base_ref=true" >> $GITHUB_OUTPUT
+          echo "Using base_ref: $base_ref (base_name: $base_name)"
         else
           echo "has_base_ref=false" >> $GITHUB_OUTPUT
+          echo "No base_ref - will generate size-only report"
         fi
 
     - name: Checkout BASE
@@ -144,7 +179,7 @@ runs:
       run: |
         # generate markdown
         if [ "${{ steps.determine_base_ref.outputs.has_base_ref }}" = "true" ]; then
-          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ inputs.base_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
+          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ steps.determine_base_ref.outputs.base_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
         else
           md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --no-base)
         fi

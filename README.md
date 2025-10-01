@@ -138,8 +138,9 @@ This will generate a simpler table showing only the current size metrics without
 ### For Releases
 
 This action can also be used to compute the flash and D/IRAM size changes for
-releases. It will compare the current build against the latest release on the
-target branch (e.g. `main` or `develop`).
+releases. When used on release events, it will automatically compare against the 
+previous tag chronologically. If no previous tag exists, it will show a size-only 
+report without comparison.
 
 You will need to ensure that the build artifacts are available in the `build`
 directory (or whatever directory you specify in the `build-path` input). This
@@ -157,34 +158,25 @@ jobs:
     permissions:
       contents: write # to allow updating release notes
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # to fetch all tags
-
-    - name: Determine base ref
-      id: base
-      shell: bash
-      run: |
-        set -euo pipefail
-        # use the previous tag chronologically
-        prev=$(git tag --sort=-creatordate | sed -n '2p')
-        if [ -z "$prev" ]; then prev=$(git tag --sort=-v:refname | sed -n '2p'); fi
-        echo "ref=$prev" >> "$GITHUB_OUTPUT"
-
     - name: Determine Size Delta
       uses: esp-cpp/esp-idf-size-delta@v1
       with:
         app_name: "My ESP-IDF App"
         app_path: "."
         head_name: "${{ github.event.release.tag_name }}"
-        base_name: "${{ steps.base.outputs.ref }}"
         idf_target: esp32s3
         idf_version: v5.5
         idf_component_manager: "1" # enable component manager
-        base_ref: ${{ steps.base.outputs.ref }}
+        # base_ref is automatically detected for releases (previous tag)
         flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
         post_comment: 'false' # set to false since this is not a PR with comments
 ```
+
+**Note:** The action will automatically:
+- Find the previous tag chronologically when processing a release
+- Use that tag as the base reference for comparison  
+- Set the base column name to the actual tag name (e.g., "v1.0.0") for clear labeling
+- Fall back to a size-only report if it's the first release (no previous tags)
 
 ### Inputs 
 
@@ -212,11 +204,11 @@ inputs:
     required: false
     default: 'PR'
   base_name:
-    description: 'Name of the base app (for reporting, defaults to "Base")'
+    description: 'Name of the base app (for reporting, defaults to "Base", auto-set to tag name for releases)'
     required: false
     default: 'Base'
   base_ref:
-    description: 'Git ref/sha to use as base for delta (optional - if omitted, shows only current size without comparison)'
+    description: 'Git ref/sha to use as base for delta (optional - auto-detected for PRs and releases, or omit for size-only report)'
     required: false
   post_comment:
     description: 'Whether to post a PR comment (true/false)'
