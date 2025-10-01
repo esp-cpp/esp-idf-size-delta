@@ -129,8 +129,6 @@ jobs:
         app_path: "."
         idf_target: esp32s3
         idf_version: v5.5
-        # base_ref is omitted - will show only current size without delta comparison
-        post_comment: 'false' # typically for push events, not PRs
 ```
 
 This will generate a simpler table showing only the current size metrics without base/delta columns.
@@ -168,7 +166,6 @@ jobs:
         idf_component_manager: "1" # enable component manager
         # base_ref and head_name are automatically detected for releases
         flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
-        post_comment: 'false' # set to false since this is not a PR with comments
 ```
 
 **Note:** The action will automatically:
