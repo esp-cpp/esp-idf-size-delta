@@ -13,6 +13,8 @@ It can calculate and post size delta tables on both `pull requests` as well as `
 
 - [ESP IDF Size-Delta Action](#esp-idf-size-delta-action)
   - [About](#about)
+    - [Example Output on PR](#example-output-on-pr)
+    - [Example Output on Release](#example-output-on-release)
   - [Using This Action](#using-this-action)
     - [For Pull Requests](#for-pull-requests)
     - [For Releases](#for-releases)
