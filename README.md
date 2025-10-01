@@ -139,6 +139,8 @@ jobs:
       with:
         app_name: "My ESP-IDF App"
         app_path: "."
+        head_name: "${{ github.event.release.tag_name }}"
+        base_name: "${{ steps.base.outputs.ref }}"
         idf_target: esp32s3
         idf_version: v5.5
         idf_component_manager: "1" # enable component manager
@@ -168,6 +170,14 @@ inputs:
     description: 'Set IDF_COMPONENT_MANAGER ("0" to disable)'
     required: false
     default: '0'
+  head_name:
+    description: 'Name of the head app (for reporting, defaults to "PR")'
+    required: false
+    default: 'PR'
+  base_name:
+    description: 'Name of the base app (for reporting, defaults to "Base")'
+    required: false
+    default: 'Base'
   base_ref:
     description: 'Git ref/sha to use as base for delta (defaults to PR base sha)'
     required: false

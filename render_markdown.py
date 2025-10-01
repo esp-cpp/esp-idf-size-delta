@@ -36,6 +36,8 @@ def fmt_delta(delta: int, delta_pct: Optional[float], precision: int) -> str:
 def main():
     ap = argparse.ArgumentParser(description="Render markdown size table for ESP-IDF app")
     ap.add_argument("--app-name", required=True)
+    ap.add_argument("--base-name", required=False, help="Name of base branch/commit/tag", default="Base")
+    ap.add_argument("--head-name", required=False, help="Name of head branch/commit/tag", default="PR")
     ap.add_argument("--head-json", required=True, help="Path to head size.json")
     ap.add_argument("--base-json", required=True, help="Path to base size.json")
     ap.add_argument("--flash-total-override", type=int, default=0)
@@ -117,7 +119,7 @@ def main():
     md = [
         f"### ESP-IDF Size Report for '{args.app_name}'",
         "",
-        "| Metric | Base | PR | Delta |",
+        f"| Metric | {args.base_name} | {args.head_name} | Delta |",
         "|---|---:|---:|---:|",
         *rows,
         "",
