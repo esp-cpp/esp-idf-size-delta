@@ -32,20 +32,10 @@ The primary use case for this action is to be run on pull requests and releases,
 so that the size changes will be automatically computed and added to the PR or
 release notes for ease of use.
 
-```yaml
-  size-delta:
-    name: Compute the flash and D/IRAM size delta for esp-idf projects
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: esp-cpp/esp-idf-size-delta-action@v1.0.0
-        with:
-          build-path: 'build'
-          target-branch: 'main'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-```
-
 ## Using This Action
+
+You can use this action in your GitHub workflows. Below are example workflows
+for pull requests and releases.
 
 ### For Pull Requests
 
@@ -60,31 +50,35 @@ typically means you will need to run the build step before this action.
 Here is an example workflow for pull requests:
 
 ```yaml
-name: CI
-on:
-  pull_request:
-    branches:
-      - main
-      - develop
+name: Build and Compute Size Delta (PR)
+on: [pull_request]
+
 jobs:
   build:
     name: Build the project
+    permissions:
+      issues: write # to post PR comments
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build the code
-        uses: espressif/esp-idf-ci-action@v1
-          with:
-          esp_idf_version: v5.4.1
-          target: esp32s3
-          path: '.'
-          command: idf.py build
-      - name: Compute Size Delta
-        uses: esp-cpp/esp-idf-size-delta-action@v1.0.0
+    - uses: actions/checkout@v5
+
+    - name: Build the code
+      uses: espressif/esp-idf-ci-action@v1
         with:
-          build-path: 'build'
-          target-branch: 'main'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        esp_idf_version: v5.5
+        target: esp32s3
+        path: '.'
+
+    - name: Determine Size Delta
+      uses: esp-cpp/esp-idf-size-delta@v1
+      with:
+        app_name: "My ESP-IDF App"
+        app_path: "."
+        idf_target: esp32s3
+        idf_version: v5.5
+        idf_component_manager: "1" # enable component manager
+        base_ref: ${{ github.event.pull_request.base.sha }}
+        flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
 ```
 
 ### For Releases
@@ -98,27 +92,42 @@ directory (or whatever directory you specify in the `build-path` input). This
 typically means you will need to run the build step before this action.
 
 ```yaml
-name: Release
+name: Build and Compute Size Delta (Release)
 on:
   release:
     types: [published]
 jobs:
   build:
-    name: Build the project
+    name: Compute Size Delta for Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to allow updating release notes
     steps:
-      - uses: actions/checkout@v4
-      - name: Build the code
-        uses: espressif/esp-idf-ci-action@v1
-          with:
-          esp_idf_version: v5.4.1
-          target: esp32s3
-      - name: Compute Size Delta
-        uses: esp-cpp/esp-idf-size-delta-action@v1.0.0
-        with:
-          build-path: 'build'
-          target-branch: 'main'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # to fetch all tags
+
+    - name: Determine base ref
+      id: base
+      shell: bash
+      run: |
+        set -euo pipefail
+        # use the previous tag chronologically
+        prev=$(git tag --sort=-creatordate | sed -n '2p')
+        if [ -z "$prev" ]; then prev=$(git tag --sort=-v:refname | sed -n '2p'); fi
+        echo "ref=$prev" >> "$GITHUB_OUTPUT"
+
+    - name: Determine Size Delta
+      uses: esp-cpp/esp-idf-size-delta@v1
+      with:
+        app_name: "My ESP-IDF App"
+        app_path: "."
+        idf_target: esp32s3
+        idf_version: v5.5
+        idf_component_manager: "1" # enable component manager
+        base_ref: ${{ steps.base.outputs.ref }}
+        flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
+        post_comment: 'false' # set to false since this is not a PR with comments
 ```
 
 ### Inputs 
@@ -135,6 +144,9 @@ inputs:
     description: 'ESP-IDF version to setup'
     required: false
     default: 'v5.5'
+  idf_target:
+    description: 'ESP-IDF target (defaults to IDF_TARGET env var or "esp32")'
+    required: false
   idf_component_manager:
     description: 'Set IDF_COMPONENT_MANAGER ("0" to disable)'
     required: false
@@ -154,15 +166,13 @@ inputs:
     description: 'GitHub token'
     required: false
     default: ${{ github.token }}
+  checkout_token:
+    description: 'Token to use for checkout actions (defaults to GITHUB_TOKEN)'
+    required: false
+    default: ''
 
 outputs:
   markdown:
     description: 'Markdown report for this app'
     value: ${{ steps.mkdown.outputs.markdown }}
-  head_json:
-    description: 'JSON metrics for PR/head'
-    value: ${{ steps.collect-head.outputs.json }}
-  base_json:
-    description: 'JSON metrics for base'
-    value: ${{ steps.collect-base.outputs.json }}
 ```
