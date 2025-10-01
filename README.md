@@ -81,7 +81,7 @@ jobs:
 
     - name: Build the code
       uses: espressif/esp-idf-ci-action@v1
-        with:
+      with:
         esp_idf_version: v5.5
         target: esp32s3
         path: '.'
@@ -117,7 +117,7 @@ jobs:
 
     - name: Build the code
       uses: espressif/esp-idf-ci-action@v1
-        with:
+      with:
         esp_idf_version: v5.5
         target: esp32s3
         path: '.'
