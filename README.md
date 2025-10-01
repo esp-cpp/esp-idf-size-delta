@@ -6,6 +6,13 @@ commenting on PRs and releases.
 This repository provides a reusable action for computing changes between builds
 (e.g. for PRs and releases) of your flash and D/IRAM usage for esp-idf projects.
 
+It can calculate and post size delta tables on both `pull requests` as well as `releases`:
+
+<img width="1023" height="542" alt="CleanShot 2025-10-01 at 09 29 57" src="https://github.com/user-attachments/assets/8f39f662-c801-4e73-bed0-a09698b2f39f" />
+
+<img width="1174" height="804" alt="image" src="https://github.com/user-attachments/assets/71f51d70-9058-4156-93f3-6a64beed246b" />
+
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
