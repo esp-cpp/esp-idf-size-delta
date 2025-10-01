@@ -163,11 +163,10 @@ jobs:
       with:
         app_name: "My ESP-IDF App"
         app_path: "."
-        head_name: "${{ github.event.release.tag_name }}"
         idf_target: esp32s3
         idf_version: v5.5
         idf_component_manager: "1" # enable component manager
-        # base_ref is automatically detected for releases (previous tag)
+        # base_ref and head_name are automatically detected for releases
         flash_total_override: 1500000 # optional, number of bytes for app partition in flash for percentage calculation
         post_comment: 'false' # set to false since this is not a PR with comments
 ```
@@ -176,6 +175,7 @@ jobs:
 - Find the previous tag chronologically when processing a release
 - Use that tag as the base reference for comparison  
 - Set the base column name to the actual tag name (e.g., "v1.0.0") for clear labeling
+- Set the head column name to the current release tag (e.g., "v1.1.0") for clear labeling
 - Fall back to a size-only report if it's the first release (no previous tags)
 
 ### Inputs 
@@ -200,7 +200,7 @@ inputs:
     required: false
     default: '0'
   head_name:
-    description: 'Name of the head app (for reporting, defaults to "PR")'
+    description: 'Name of the head app (for reporting, defaults to "PR", auto-set to tag name for releases)'
     required: false
     default: 'PR'
   base_name:
