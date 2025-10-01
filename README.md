@@ -164,7 +164,7 @@ jobs:
 
     - name: Build the code
       uses: espressif/esp-idf-ci-action@v1
-        with:
+      with:
         esp_idf_version: v5.5
         target: esp32s3
         path: '.'
@@ -185,7 +185,8 @@ jobs:
 
 **Note:** The action will automatically:
 - Find the previous tag chronologically when processing a release
-- Use that tag as the base reference for comparison
+- Use that tag as the base reference for comparison  
+- Set the base column name to the actual tag name (e.g., "v1.0.0") for clear labeling
 - Fall back to a size-only report if it's the first release (no previous tags)
 
 ### Inputs 
@@ -214,7 +215,7 @@ inputs:
     required: false
     default: 'PR'
   base_name:
-    description: 'Name of the base app (for reporting, defaults to "Base")'
+    description: 'Name of the base app (for reporting, defaults to "Base", auto-set to tag name for releases)'
     required: false
     default: 'Base'
   base_ref:

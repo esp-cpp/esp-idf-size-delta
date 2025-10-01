@@ -91,6 +91,7 @@ runs:
       shell: bash
       run: |
         base_ref="${{ inputs.base_ref }}"
+        base_name="${{ inputs.base_name }}"
         
         # If no base_ref provided, try to determine it automatically
         if [ -z "$base_ref" ]; then
@@ -116,6 +117,10 @@ runs:
             
             if [ -n "$prev_tag" ]; then
               base_ref="$prev_tag"
+              # Auto-set base_name to the tag if not already specified
+              if [ "$base_name" = "Base" ]; then
+                base_name="$prev_tag"
+              fi
               echo "Found previous tag: $prev_tag"
             else
               echo "No previous tag found for release comparison"
@@ -124,9 +129,10 @@ runs:
         fi
         
         echo "base_ref=$base_ref" >> $GITHUB_OUTPUT
+        echo "base_name=$base_name" >> $GITHUB_OUTPUT
         if [ -n "$base_ref" ]; then
           echo "has_base_ref=true" >> $GITHUB_OUTPUT
-          echo "Using base_ref: $base_ref"
+          echo "Using base_ref: $base_ref (base_name: $base_name)"
         else
           echo "has_base_ref=false" >> $GITHUB_OUTPUT
           echo "No base_ref - will generate size-only report"
@@ -173,7 +179,7 @@ runs:
       run: |
         # generate markdown
         if [ "${{ steps.determine_base_ref.outputs.has_base_ref }}" = "true" ]; then
-          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ inputs.base_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
+          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ steps.determine_base_ref.outputs.base_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
         else
           md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-name "${{ inputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --no-base)
         fi
