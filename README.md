@@ -8,11 +8,6 @@ This repository provides a reusable action for computing changes between builds
 
 It can calculate and post size delta tables on both `pull requests` as well as `releases`:
 
-<img width="1023" height="542" alt="CleanShot 2025-10-01 at 09 29 57" src="https://github.com/user-attachments/assets/8f39f662-c801-4e73-bed0-a09698b2f39f" />
-
-<img width="1174" height="804" alt="image" src="https://github.com/user-attachments/assets/71f51d70-9058-4156-93f3-6a64beed246b" />
-
-
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
@@ -38,6 +33,19 @@ them into a markdown table.
 The primary use case for this action is to be run on pull requests and releases,
 so that the size changes will be automatically computed and added to the PR or
 release notes for ease of use.
+
+For an example repository which uses this action, see
+[esp-cpp/template](https://github.com/esp-cpp/template):
+- [esp-cpp/template build.yml](https://github.com/esp-cpp/template/blob/main/.github/workflows/build.yml) - uses this action on pull requests 
+- [esp-cpp/template package_main.yml](https://github.com/esp-cpp/template/blob/main/.github/workflows/package_main.yml) - uses this action on releases
+
+### Example Output on PR
+
+<img width="1023" height="542" alt="CleanShot 2025-10-01 at 09 29 57" src="https://github.com/user-attachments/assets/8f39f662-c801-4e73-bed0-a09698b2f39f" />
+
+### Example Output on Release
+
+<img width="1174" height="804" alt="image" src="https://github.com/user-attachments/assets/71f51d70-9058-4156-93f3-6a64beed246b" />
 
 ## Using This Action
 
