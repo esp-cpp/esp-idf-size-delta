@@ -82,9 +82,14 @@ runs:
 
     - name: Process size (HEAD)
       shell: bash
-      working-directory: head/${{ inputs.app_path }}
       run:
-        python ${{ github.action_path }}/idf_size_report.py --in-file idf_size.json --out-file size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        python ${{ github.action_path }}/idf_size_report.py --in-file head/${{ inputs.app_path }}/idf_size.json --out-file head_size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > head_size.json
+
+    # delete the head directory
+    - name: Clean up head directory
+      shell: bash
+      run: |
+        rm -rf head
 
     - name: Determine base ref
       id: determine_base_ref
@@ -170,16 +175,21 @@ runs:
     - name: Process size (BASE)
       if: ${{ steps.determine_base_ref.outputs.has_base_ref == 'true' }}
       shell: bash
-      working-directory: base/${{ inputs.app_path }}
       run:
-        python ${{ github.action_path }}/idf_size_report.py --in-file idf_size.json --out-file size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > size.json
+        python ${{ github.action_path }}/idf_size_report.py --in-file base/${{ inputs.app_path }}/idf_size.json --out-file base_size.json --flash-total-override "${{ inputs.flash_total_override }}" || echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > base_size.json
 
     - name: Create empty base size (no base ref)
       if: ${{ steps.determine_base_ref.outputs.has_base_ref == 'false' }}
       shell: bash
       run: |
-        mkdir -p base/${{ inputs.app_path }}
-        echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > base/${{ inputs.app_path }}/size.json
+        echo '{"flash":0,"dram":0,"iram":0,"ram":0}' > base_size.json
+
+    # delete the base directory
+    - name: Clean up base directory
+      if: ${{ steps.determine_base_ref.outputs.has_base_ref == 'true' }}
+      shell: bash
+      run: |
+        rm -rf base
 
     - name: Make markdown
       id: mkdown
@@ -187,9 +197,9 @@ runs:
       run: |
         # generate markdown
         if [ "${{ steps.determine_base_ref.outputs.has_base_ref }}" = "true" ]; then
-          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ steps.determine_base_ref.outputs.base_name }}" --head-name "${{ steps.determine_base_ref.outputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --base-json base/${{ inputs.app_path }}/size.json)
+          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --base-name "${{ steps.determine_base_ref.outputs.base_name }}" --head-name "${{ steps.determine_base_ref.outputs.head_name }}" --head-json head_size.json --base-json base_size.json)
         else
-          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-name "${{ steps.determine_base_ref.outputs.head_name }}" --head-json head/${{ inputs.app_path }}/size.json --no-base)
+          md=$(${{ steps.id_python_313.outputs.python-path }} ${{ github.action_path }}/render_markdown.py --app-name "${{ inputs.app_name }}" --head-name "${{ steps.determine_base_ref.outputs.head_name }}" --head-json head_size.json --no-base)
         fi
         # append to summary and set output
         echo "$md" >> "$GITHUB_STEP_SUMMARY"
