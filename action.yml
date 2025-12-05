@@ -89,6 +89,7 @@ runs:
     - name: Clean up head directory
       shell: bash
       run: |
+        sudo chown -R $USER:$USER head
         rm -rf head
 
     - name: Determine base ref
@@ -189,6 +190,7 @@ runs:
       if: ${{ steps.determine_base_ref.outputs.has_base_ref == 'true' }}
       shell: bash
       run: |
+        sudo chown -R $USER:$USER base
         rm -rf base
 
     - name: Make markdown
