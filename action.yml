@@ -90,7 +90,7 @@ runs:
       shell: bash
       run: |
         rm -rf head
-  
+
     - name: Determine base ref
       id: determine_base_ref
       shell: bash
@@ -190,7 +190,7 @@ runs:
       shell: bash
       run: |
         rm -rf base
-  
+
     - name: Make markdown
       id: mkdown
       shell: bash
